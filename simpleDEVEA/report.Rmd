@@ -1,0 +1,1490 @@
+---
+title: "RNAseq enrichment report"
+author: ""
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+    css: report.css
+    
+params:
+  values: NA
+  datadf: NA
+  datadfilt: NA
+  annotation: NA
+  specie: NA
+  padj: NA
+  logfc: NA
+  volcObj: NA
+  genesvolcano: NA
+  upcolor:  NA
+  downcolor: NA
+  karyObj: NA
+  datagenesup: NA
+  datagenesdown: NA
+  tablekgaObj: NA
+  kggall: NA
+  genesdedown: NA
+  genesdeup: NA
+  kggdtall: NA
+  barkgaObj: NA
+  nrowsall: NA
+  typebarkeggall: NA
+  chorkgaObj: NA
+  dotkgaObj: NA
+  heatkgaObj: NA
+  netkgaObj: NA
+  tablekguObj: NA
+  barkguObj: NA
+  chorkguObj: NA
+  dotkguObj: NA
+  heatkguObj: NA
+  netkguObj: NA
+  tablekgdObj: NA
+  barkgdObj: NA
+  chorkgdObj: NA
+  dotkgdObj: NA
+  heatkgdObj: NA
+  netkgdObj: NA
+  kggup: NA
+  kggdown: NA
+  kggdtup: NA
+  kggdtdown: NA
+  nrowsup: NA
+  nrowsdown: NA
+  typebarbpall: NA
+  typebarmfall: NA
+  typebarccall: NA
+  tablegoaObj: NA
+  bargoaObj: NA
+  dotgoaObj: NA
+  gobargoaObj: NA
+  gocirclegoaObj: NA
+  tablegouObj: NA
+  bargouObj: NA
+  dotgouObj: NA
+  gobargouObj: NA
+  gocirclegouObj: NA
+  tablegodObj: NA
+  bargodObj: NA
+  dotgodObj: NA
+  gobargodObj: NA
+  gocirclegodObj: NA
+  cloudgoaObj: NA
+  cloudgouObj: NA
+  cloudgodObj: NA
+  goall: NA
+  godtall: NA
+  goup: NA
+  godtup: NA
+  godown: NA
+  godtdown: NA
+  bprowsall: NA
+  mfrowsall: NA
+  ccrowsall: NA
+  bprowsup: NA
+  mfrowsup: NA
+  ccrowsup: NA
+  bprowsdown: NA
+  mfrowsdown: NA
+  ccrowsdown: NA
+  gsearow: NA
+  gseagsea: NA
+  tablegseaObj: NA
+  plotgseaObj: NA
+  textnotes: NA
+  tempdir: NA
+ 
+---
+
+
+```{r results="asis", echo=FALSE}
+cat("
+<style>
+#content {
+  max-width: 1080px;
+  margin-left: 300px;
+  background: #edf0f2;
+}
+</style>
+")
+```
+
+```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, out.width='100%',
+                      comment = FALSE, message = FALSE)
+library("scales")
+library("shinydashboard")
+library("flexdashboard")
+library("limma")
+library("tidyverse")
+library("DT")
+library("purrr")
+library("plotly")
+library("DESeq2")
+library("ggraph")
+library("igraph")
+library("edgeR")
+library("PoiClaClu")
+library("ggplot2")
+library("pheatmap")
+library("RColorBrewer")
+library("knitr")
+library("apeglm")
+library("calibrate")
+library("AnnotationDbi")
+library('org.Mm.eg.db')
+library('AnnotationHub')
+library('plotly')
+library('topGO')
+library('Rgraphviz')
+library("BiocParallel")
+library('clusterProfiler')
+library('pathview')
+library('gage')
+library('ggpubr')
+library('gageData')
+library('EnsDb.Mmusculus.v79')
+library('EnhancedVolcano')
+library('gplots')
+library("htmltools")
+source("utils.R")
+
+
+setwd(params$tempdir)
+if(!is.null(params$values$preview)){preview=TRUE}else{preview=FALSE}
+if(!is.null(params$values$keggAll)){kegg=TRUE}else{kegg=FALSE}
+if(!is.null(params$values$keggUp)){keggUp=TRUE}else{keggUp=FALSE}
+if(!is.null(params$values$keggDown)){keggDown=TRUE}else{keggDown=FALSE}
+if(!is.null(params$values$GOAll)){GOAll=TRUE}else{GOAll=FALSE}
+if(!is.null(params$values$GOUp)){GOUp=TRUE}else{GOUp=FALSE}
+if(!is.null(params$values$GODown)){GODown=TRUE}else{GODown=FALSE}
+if(is.null(params$gseagsea)){GSEA=FALSE} else{
+  if(!is.null(params$values$GSEA) & dim(params$gseagsea@result)[1]!=0)
+    { GSEA=TRUE}else{GSEA=FALSE} }
+
+
+```
+
+
+```{r echo=FALSE, eval=TRUE}
+upgenes <- params$genesdeup
+downgenes <- params$genesdedown
+allgenes <- upgenes+downgenes
+
+htmltools::tagList(rmarkdown::html_dependency_font_awesome())
+tags$div(id="allbox", class ="col-sm-4",
+  tags$div(id="hello", class="info-box bg-light-blue", 
+           tags$span(class="info-box-icon", tags$i(class="fa fa-arrows-alt-v") ),
+           tags$div(class="info-box-content", 
+                    tags$span(class="info-box-text", "All DE genes"),
+                    tags$span(class="info-box-number", allgenes)
+                    )
+           )
+)
+tags$div(id="allbox", class ="col-sm-4",
+  tags$div(id="hello", class="info-box bg-light-blue", 
+           tags$span(class="info-box-icon", tags$i(class="glyphicon glyphicon-thumbs-down") ),
+           tags$div(class="info-box-content", 
+                    tags$span(class="info-box-text", "Downregulated genes"),
+                    tags$span(class="info-box-number", downgenes)
+                    )
+           )
+)
+tags$div(id="allbox", class ="col-sm-4",
+  tags$div(id="hello", class="info-box bg-light-blue", 
+           tags$span(class="info-box-icon", tags$i(class="glyphicon glyphicon-thumbs-up") ),
+           tags$div(class="info-box-content", 
+                    tags$span(class="info-box-text", "upregulated genes"),
+                    tags$span(class="info-box-number", "50")
+                    )
+           )
+)
+
+```
+
+```{r notesTitle, eval=notes, results='asis'}
+  cat("# Notes section")
+```
+
+```{r notesBody, eval=notes, results='asis'}
+cat(params$textnotes)
+```
+
+```{r previewTitle, eval=preview, results='asis'}
+  cat("# Preview section")
+```
+
+```{r volcanotitle, eval = params$volcObj, results='asis' }
+cat("## Volcano plot")
+```
+
+```{r volcanoplot, eval = params$volcObj, fig.height=8}
+CustomVolcanoReport( params$datadf,
+  lab = as.character(params$datadf$SYMBOL),
+  selectLab = params$genesvolcano,
+  x = 'logFC',
+  y = 'pval',
+  pCutoff = params$padj,
+  FCcutoffUP = params$logfc[2],
+  FCcutoffDOWN = params$logfc[1],
+  #xlim = c(-8, 8),
+  col = c("gray", "#7cccc3", "#d99c01", params$upcolor, params$downcolor),
+  titleLabSize = 14, subtitleLabSize = 8, captionLabSize = 8, axisLabSize = 12,
+  legendLabSize = 8, legendIconSize = 3
+)
+```
+
+
+```{r karyotitle, eval=params$karyObj, results='asis' }
+cat("## Karyoplot")
+```
+
+```{r karyoplot, eval=params$karyObj}
+    krtpReport(params$datadf, specie = params$specie, pval = params$padj, fcdown = params$logfc[1],
+         fcup = params$logfc[2], bg="#edf0f2", coldown="#1f31ff" , colup="#f7665c", params$annotation)
+```
+
+<!-- kegg all section -->
+
+```{r keggAllsection, eval=kegg, results='asis'}
+cat("# Kegg All section")
+```
+
+```{r tablekga, eval = params$tablekgaObj, results='asis' }
+cat("## Table kegg All genes")
+```
+
+```{r tablekgaplot, eval = params$tablekgaObj}
+    kggdtall <- params$kggdtall
+    names(kggdtall)[names(kggdtall) == "DE"] <- "DEG"
+    names(kggdtall)[names(kggdtall) == "P.DE"] <- "p-value"
+    tituloTabla <- paste0("Table: Kegg all genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ",
+                          "padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "keggAll",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "keggAll",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(
+      kggdtall, 
+      vars = c("genes"),
+      filter = list(position="top", clear=FALSE),
+      escape = FALSE,
+      opts = list(order = list(list(5, 'asc')),
+        pageLength = 10, white_space = "normal",
+        buttons = customButtons
+        ) )
+```
+
+```{r barkga, eval = params$barkgaObj, results='asis' }
+cat("## Barplot kegg All genes")
+
+```
+
+```{r  eval = params$barkgaObj }
+kggall <- params$kggall
+p <- plotKeggAllReport(enrichdf = kggall[params$nrowsall,], nrows = length(params$nrowsall),
+                genesUp = params$datagenesup, genesDown = params$datagenesdown,
+                colors = c(params$upcolor, params$downcolor))
+    if(params$typebarkeggall == "Dodge"){
+        (p[[1]])   } else if(params$typebarkeggall=="Stack"){
+            (p[[2]])} else {(p[[3]])}
+```
+
+```{r chorkga, eval = params$chorkgaObj, results='asis' }
+cat("## Chorplot All genes")
+```
+
+```{r chorkgaplot, eval = params$chorkgaObj}
+#chordPlotReport(params$kggall[params$nrowsall, ], nRows = length(params$nrowsall), orderby = "P.DE")
+mychordplot(params$kggall[params$nrowsall,  c("Pathway","genes")], div = "chordplotall", elementId = "chordplotall")
+```
+
+```{r eval = params$chorkgaObj, fig.height=3}
+legendChorplotReport(params$kggall[params$nrowsall, ] )
+```
+
+```{r dotkga, eval = params$dotkgaObj, results='asis' }
+cat("## Dotplot kegg All genes")
+```
+
+```{r dotkgaplot, eval = params$dotkgaObj}
+kggall <- params$kggall
+dotPlotkeggReport(params$kggall[params$nrowsall,], n = length(params$nrowsall))
+```
+
+```{r heatkga, eval = params$heatkgaObj, results='asis' }
+cat("## Heatmap kegg All genes")
+```
+
+```{r heatkgaplot, eval = params$heatkgaObj}
+heatmapKeggLogFCReport(params$kggdtall, params$datadfilt, params$nrowsall ) 
+```
+
+```{r netkga, eval = params$netkgaObj, results='asis' }
+cat("## Netplot kegg All genes")
+```
+
+```{r netkgaplot, eval = params$netkgaObj}
+customCnetKeggReport(params$kggall, params$nrowsall, genesUp = params$datagenesup, genesDown = params$datagenesdown)
+```
+
+<!-- kegg up section -->
+
+```{r keggUpsection, eval=keggUp, results='asis'}
+cat("# Kegg Up section")
+```
+
+```{r tablekgu, eval = params$tablekguObj, results='asis' }
+cat("## Table kegg Up genes")
+```
+
+```{r tablekguplot, eval = params$tablekguObj}
+    kggdtup <- params$kggdtup
+    names(kggdtup)[names(kggdtup) == "DE"] <- "DEG"
+    names(kggdtup)[names(kggdtup) == "P.DE"] <- "p-value"
+    tituloTabla <- paste0("Table: Kegg up-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ",
+                          "padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "keggUp",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "keggUp",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(
+      kggdtup, 
+      vars = c("genes"),
+      filter = list(position="top", clear=FALSE),
+      escape = FALSE,
+      opts = list(order = list(list(5, 'asc')),
+        pageLength = 10, white_space = "normal",
+        buttons = customButtons
+        ) )
+    
+```
+
+
+```{r barkgu, eval = params$barkguObj, results='asis' }
+cat("## Barplot kegg Up genes")
+
+```
+
+```{r  eval = params$barkguObj }
+kggup <- params$kggup
+plotKeggReport(enrichdf = kggup[params$nrowsup,], nrows = length(params$nrowsup), colors = c(params$upcolor) )
+```
+
+```{r chorkgu, eval = params$chorkguObj, results='asis' }
+cat("## Chorplot Up genes")
+```
+
+```{r chorkguplot, eval = params$chorkguObj}
+#chordPlotReport(params$kggup[params$nrowsup, ], nRows = length(params$nrowsup), orderby = "P.DE")
+mychordplot(params$kggup[params$nrowsup,  c("Pathway","genes")], div = "chordplotup", elementId = "chordplotup")
+legendChorplotReport(params$kggup[params$nrowsup, ] )
+```
+
+```{r dotkgu, eval = params$dotkguObj, results='asis' }
+cat("## Dotplot kegg Up genes")
+```
+
+```{r dotkguplot, eval = params$dotkguObj}
+kggup <- params$kggup
+dotPlotkeggReport(params$kggup[params$nrowsup,], n = length(params$nrowsup))
+```
+
+```{r heatkgu, eval = params$heatkguObj, results='asis' }
+cat("## Heatmap kegg Up genes")
+```
+
+```{r heatkguplot, eval = params$heatkguObj}
+heatmapKeggLogFCReport(params$kggdtup, params$datadfilt, params$nrowsup ) 
+```
+
+```{r netkgu, eval = params$netkguObj, results='asis' }
+cat("## Netplot kegg Up genes")
+```
+
+```{r netkguplot, eval = params$netkguObj}
+customCnetKeggReport(params$kggup, params$nrowsup, genesUp = params$datagenesup, genesDown = params$datagenesdown)
+```
+
+
+<!-- kegg down section -->
+
+```{r keggDownsection, eval=keggDown, results='asis'}
+cat("# Kegg Down section")
+```
+
+```{r tablekgd, eval = params$tablekgdObj, results='asis' }
+cat("## Table kegg Down genes")
+```
+
+```{r tablekgdownlot, eval = params$tablekgdObj}
+    kggdtdown <- params$kggdtdown
+    names(kggdtdown)[names(kggdtdown) == "DE"] <- "DEG"
+    names(kggdtdown)[names(kggdtdown) == "P.DE"] <- "p-value"
+    tituloTabla <- paste0("Table: Kegg down-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ",
+                          "padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "keggDown",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "keggDown",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(
+      kggdtdown, 
+      vars = c("genes"),
+      filter = list(position="top", clear=FALSE),
+      escape = FALSE,
+      opts = list(order = list(list(5, 'asc')),
+        pageLength = 10, white_space = "normal",
+        buttons = customButtons
+        ) )
+    
+```
+
+
+```{r barkgd, eval = params$barkgdObj, results='asis' }
+cat("## Barplot kegg Down genes")
+
+```
+
+```{r  eval = params$barkgdObj }
+kggdown <- params$kggdown
+plotKeggReport(enrichdf = kggdown[params$nrowsdown,], nrows = length(params$nrowsdown), colors = c(params$downcolor) )
+```
+
+```{r chorkgd, eval = params$chorkgdObj, results='asis' }
+cat("## Chorplot Down genes")
+```
+
+```{r chorkgdownlot, eval = params$chorkgdObj}
+#chordPlotReport(params$kggdown[params$nrowsdown, ], nRows = length(params$nrowsdown), orderby = "P.DE")
+mychordplot(params$kggdown[params$nrowsdown,  c("Pathway","genes")], div = "chordplotdown", elementId =  "chordplotdown")
+legendChorplotReport(params$kggdown[params$nrowsdown, ] )
+```
+
+```{r dotkgd, eval = params$dotkgdObj, results='asis' }
+cat("## Dotplot kegg Down genes")
+```
+
+```{r dotkgdownlot, eval = params$dotkgdObj}
+kggdown <- params$kggdown
+dotPlotkeggReport(params$kggdown[params$nrowsdown,], n = length(params$nrowsdown))
+```
+
+```{r heatkgd, eval = params$heatkgdObj, results='asis' }
+cat("## Heatmap kegg Down genes")
+```
+
+
+```{r heatkgdownlot, eval = params$heatkgdObj}
+heatmapKeggLogFCReport(params$kggdtdown, params$datadfilt, params$nrowsdown ) 
+```
+
+```{r netkgd, eval = params$netkgdObj, results='asis' }
+cat("## Netplot kegg Down genes")
+```
+
+```{r netkgdownlot, eval = params$netkgdObj}
+customCnetKeggReport(params$kggdown, params$nrowsdown, genesUp = params$datagenesup, genesDown = params$datagenesdown)
+```
+
+<!-- go all section -->
+<!-- go BP all section -->
+```{r eval = GOAll, results='asis'}
+cat("# GO all genes section")
+```
+
+```{r eval = params$tablegoaObj, results='asis' }
+cat("## GO BP all genes table")
+```
+
+
+```{r eval = params$tablegoaObj}
+
+goDT <- params$godtall
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-BP all genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "BPall",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "BPall",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="BP",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                 pageLength = 10, white_space = "normal",
+                 buttons = customButtons))
+```
+
+```{r eval = params$cloudgoaObj, results='asis'}
+cat("## WordCloud GO BP all genes")
+```
+
+```{r eval=params$cloudgoaObj, fig.width=10, fig.height=7}
+goall <- params$goall[params$goall$Ont=="BP", ]
+myggwordcloudReport(goall)
+```
+
+
+```{r eval = params$bargoaObj, results='asis' }
+cat("## Bar plot GO BP all genes ")
+```
+
+```{r eval=params$bargoaObj}
+bprowsall <- params$bprowsall
+datagenesup <- params$datagenesup
+datagenesdown <- params$datagenesdown
+ if(is.null(bprowsall)){ 
+             bprowsall <-  ( if( dim(params$godtall)[1]<10) seq_len(nrow(params$godtall)) else seq_len(10) ) }
+    gosBP <- params$goall[params$goall$Ont=="BP",]
+    p <- plotGOAllReport(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP",
+              genesUp = datagenesup, genesDown = datagenesdown,
+              colors = c(params$downcolor, params$upcolor))
+    if( params$typebarbpall == "Dodge") { p[[1]]
+    } else if ( params$typebarbpall == "Stack") { p[[2]]
+    } else { p[[3]] }
+```
+
+```{r eval = params$dotgoaObj, results='asis' }
+cat("## Dotplot GO BP all genes ")
+```
+
+
+```{r eval=params$dotgoaObj}
+bprowsall <- params$bprowsall
+ if(is.null(bprowsall)){ 
+             bprowsall <-  ( if( dim(params$godtall)[1]<20) seq_len(nrow(params$godtall)) else seq_len(20) ) }
+    gosBP <- params$goall[params$goall$Ont=="BP",]
+    dotPlotGOReport(gosBP[bprowsall,], n = length(bprowsall))
+```
+
+
+```{r eval = params$gobargoaObj, results='asis' }
+cat("## GOBarplot GO BP all genes ")
+```
+
+```{r eval=params$gobargoaObj}
+bprowsall <- params$bprowsall
+ if(is.null(bprowsall)){ 
+             bprowsall <-  ( if( dim(params$godtall)[1]<30) seq_len(nrow(params$godtall)) else seq_len(30) ) }
+datagenesall <- rbind(params$datagenesup, params$datagenesdown)
+    goBarplotReport(enrichGO = params$goall, resGO = params$datadfilt, genes= datagenesall,
+              category = "BP", nrows = bprowsall)
+```
+
+
+```{r eval = params$gocirclegoaObj, results='asis' }
+cat("## Circle-plot GO BP all genes ")
+```
+
+```{r eval=params$gocirclegoaObj}
+bprowsall <- params$bprowsall
+ if(is.null(bprowsall)){ 
+             bprowsall <-  ( if( dim(params$godtall)[1]<6) seq_len(nrow(params$godtall)) else seq_len(6) ) }
+datagenesall <- rbind(params$datagenesup, params$datagenesdown)
+    goall <- params$goall[params$goall$Ont=="BP", ]
+    if(length(bprowsall)>=4){
+      circ <- data2circleReport(go=goall[bprowsall, ], res=params$datadfilt, genes=datagenesall)
+    c <-  circleReport(circ, label.size = 3, nsub = length(bprowsall), table.legend = FALSE)
+    c
+    }
+```
+
+
+<!-- MF all -->
+
+```{r eval = params$tablegoaObj, results='asis' }
+cat("## GO MF all genes table")
+```
+
+
+```{r eval = params$tablegoaObj}
+goDT <- params$godtall
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-MF all genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "MFall",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "MFall",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="MF",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                 pageLength = 10, white_space = "normal",
+                 buttons = customButtons))
+```
+
+```{r eval = params$cloudgoaObj, results='asis'}
+cat("## WordCloud GO MF all genes")
+```
+
+```{r eval=params$cloudgoaObj, fig.width=10, fig.height=7}
+goall <- params$goall[params$goall$Ont=="MF", ]
+myggwordcloudReport(goall)
+```
+
+
+
+```{r eval = params$bargoaObj, results='asis' }
+cat("## Bar plot GO MF all genes ")
+```
+
+```{r eval=params$bargoaObj}
+mfrowsall <- params$mfrowsall
+datagenesup <- params$datagenesup
+datagenesdown <- params$datagenesdown
+ if(is.null(mfrowsall)){ 
+             mfrowsall <-  ( if( dim(params$godtall)[1]<10) seq_len(nrow(params$godtall)) else seq_len(10) ) }
+    gosMF <- params$goall[params$goall$Ont=="MF",]
+    p <- plotGOAllReport(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont="MF",
+              genesUp = datagenesup, genesDown = datagenesdown,
+              colors = c(params$downcolor, params$upcolor))
+    if( params$typebarmfall == "Dodge") { p[[1]]
+    } else if ( params$typebarmfall == "Stack") { p[[2]]
+    } else { p[[3]] }
+```
+
+```{r eval = params$dotgoaObj, results='asis' }
+cat("## Dotplot GO MF all genes ")
+```
+
+
+```{r eval=params$dotgoaObj}
+mfrowsall <- params$mfrowsall
+     if(is.null(mfrowsall)){ 
+             mfrowsall <-  ( if( dim(params$godtall)[1]<20) seq_len(nrow(params$godtall)) else seq_len(20) ) }
+    gosMF <- params$goall[params$goall$Ont=="MF",]
+    dotPlotGOReport(gosMF[mfrowsall,], n = length(mfrowsall))
+```
+
+
+```{r eval = params$gobargoaObj, results='asis' }
+cat("## GOBarplot GO MF all genes ")
+```
+
+```{r eval=params$gobargoaObj}
+mfrowsall <- params$mfrowsall
+ if(is.null(mfrowsall)){ 
+             mfrowsall <-  ( if( dim(params$godtall)[1]<30) seq_len(nrow(params$godtall)) else seq_len(30) ) }
+datagenesall <- rbind(params$datagenesup, params$datagenesdown)
+    goBarplotReport(enrichGO = params$goall, resGO = params$datadfilt, genes= datagenesall,
+              category = "MF", nrows = mfrowsall)
+```
+
+```{r eval = params$gocirclegoaObj, results='asis' }
+cat("## Circle-plot GO MF all genes ")
+```
+
+```{r eval=params$gocirclegoaObj}
+mfrowsall <- params$mfrowsall
+ if(is.null(mfrowsall)){ 
+             mfrowsall <-  ( if( dim(params$godtall)[1]<6) seq_len(nrow(params$godtall)) else seq_len(6) ) }
+datagenesall <- rbind(params$datagenesup, params$datagenesdown)
+    goall <- params$goall[params$goall$Ont=="MF", ]
+    if(length(mfrowsall)>=4){
+      circ <- data2circleReport(go=goall[mfrowsall, ], res=params$datadfilt, genes=datagenesall)
+    c <-  circleReport(circ, label.size = 3, nsub = length(mfrowsall), table.legend = FALSE)
+    c
+    }
+```
+
+
+<!-- CC all -->
+
+
+```{r eval = params$tablegoaObj, results='asis' }
+cat("## GO CC all genes table")
+```
+
+
+```{r eval = params$tablegoaObj}
+goDT <- params$godtall
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-CC all genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "CCall",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "CCall",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="CC",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                 pageLength = 10, white_space = "normal",
+                 buttons = customButtons))
+```
+
+```{r eval = params$cloudgoaObj, results='asis'}
+cat("## WordCloud GO CC all genes")
+```
+
+```{r eval=params$cloudgoaObj, fig.width=10, fig.height=7}
+goall <- params$goall[params$goall$Ont=="CC", ]
+myggwordcloudReport(goall)
+```
+
+
+```{r eval = params$bargoaObj, results='asis' }
+cat("## Bar plot GO CC all genes ")
+```
+
+```{r eval=params$bargoaObj}
+ccrowsall <- params$ccrowsall
+datagenesup <- params$datagenesup
+datagenesdown <- params$datagenesdown
+ if(is.null(ccrowsall)){ 
+             ccrowsall <-  ( if( dim(params$godtall)[1]<10) seq_len(nrow(params$godtall)) else seq_len(10) ) }
+    gosCC <- params$goall[params$goall$Ont=="CC",]
+    p <- plotGOAllReport(enrichdf = gosCC[ccrowsall, ], nrows = length(ccrowsall), ont="CC",
+              genesUp = datagenesup, genesDown = datagenesdown,
+              colors = c(params$downcolor, params$upcolor))
+    if( params$typebarccall == "Dodge") { p[[1]]
+    } else if ( params$typebarccall == "Stack") { p[[2]]
+    } else { p[[3]] }
+```
+
+```{r eval = params$dotgoaObj, results='asis' }
+cat("## Dotplot GO CC all genes ")
+```
+
+
+```{r eval=params$dotgoaObj}
+ccrowsall <- params$ccrowsall
+     if(is.null(ccrowsall)){ 
+             ccrowsall <-  ( if( dim(params$godtall)[1]<20) seq_len(nrow(params$godtall)) else seq_len(20) ) }
+    gosCC <- params$goall[params$goall$Ont=="CC",]
+    dotPlotGOReport(gosCC[ccrowsall,], n = length(ccrowsall))
+```
+
+
+```{r eval = params$gobargoaObj, results='asis' }
+cat("## GOBarplot GO CC all genes ")
+```
+
+```{r eval=params$gobargoaObj}
+ccrowsall <- params$ccrowsall
+ if(is.null(ccrowsall)){ 
+             ccrowsall <-  ( if( dim(params$godtall)[1]<30) seq_len(nrow(params$godtall)) else seq_len(30) ) }
+datagenesall <- rbind(params$datagenesup, params$datagenesdown)
+    goBarplotReport(enrichGO = params$goall, resGO = params$datadfilt, genes= datagenesall,
+              category = "CC", nrows = ccrowsall)
+```
+
+```{r eval = params$gocirclegoaObj, results='asis' }
+cat("## Circle-plot GO CC all genes ")
+```
+
+```{r eval=params$gocirclegoaObj}
+ccrowsall <- params$ccrowsall
+ if(is.null(ccrowsall)){ 
+             ccrowsall <-  ( if( dim(params$godtall)[1]<6) seq_len(nrow(params$godtall)) else seq_len(6) ) }
+datagenesall <- rbind(params$datagenesup, params$datagenesdown)
+    goall <- params$goall[params$goall$Ont=="CC", ]
+    if(length(ccrowsall)>=4){
+      circ <- data2circleReport(go=goall[ccrowsall, ], res=params$datadfilt, genes=datagenesall)
+    c <-  circleReport(circ, label.size = 3, nsub = length(ccrowsall), table.legend = FALSE)
+    c
+    }
+```
+
+<!-- go UP section -->
+<!-- go BP UP section -->
+
+```{r eval = GOUp, results='asis'}
+cat("# GO up genes section")
+```
+
+```{r eval = params$tablegouObj, results='asis' }
+cat("## GO BP up genes table")
+```
+
+```{r eval = params$tablegouObj}
+    goDT <- params$godtup
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-BP up-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "BPup",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "BPup",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="BP",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                           pageLength = 10, white_space = "normal",
+                           buttons = customButtons))
+```
+
+```{r eval = params$cloudgouObj, results='asis'}
+cat("## WordCloud GO BP up genes")
+```
+
+```{r eval=params$cloudgouObj, fig.width=10, fig.height=7}
+goup <- params$goup[params$goup$Ont=="BP", ]
+myggwordcloudReport(goup)
+```
+
+
+```{r eval = params$bargouObj, results='asis'}
+cat("## Barplot BP Up genes")
+```
+
+```{r eval = params$bargouObj }
+    bprowsup <- params$bprowsup
+    gosBP <- params$goup[params$goup$Ont=="BP",]
+    if(is.null(bprowsup)){ 
+             bprowsup <-  ( if( dim(params$godtup)[1]<10) seq_len(nrow(params$godtup)) else seq_len(10) ) }
+    gosBP <- params$goup[params$goup$Ont=="BP",]
+    plotGOReport(enrichdf = gosBP[bprowsup, ], nrows = length(bprowsup), ont="BP",
+           colors = c(params$upcolor) )
+```
+
+```{r eval = params$dotgouObj, results='asis'}
+cat("## Dotplot GO BP up")
+```
+
+```{r eval = params$dotgouObj}
+    bprowsup <- params$bprowsup
+        if(is.null(bprowsup)){ 
+             bprowsup <-  ( if( dim(params$godtup)[1]<20) seq_len(nrow(params$godtup)) else seq_len(20) ) }
+    gosBP <- params$goup[params$goup$Ont=="BP",]
+    dotPlotGOReport(gosBP[bprowsup,], n = length(bprowsup))
+```
+
+
+```{r eval = params$gobargouObj, results='asis'}
+cat("## GObarplot GO BP up")
+```
+
+```{r eval = params$gobargouObj}
+bprowsup <- params$bprowsup
+    if(is.null(bprowsup)){ 
+             bprowsup <-  ( if( dim(params$godtup)[1]<30) seq_len(nrow(params$godtup)) else seq_len(30) ) }
+    goBarplotReport(enrichGO = params$goup, resGO = params$datadfilt, genes= params$datagenesup,
+              category = "BP", nrows = bprowsup)
+```
+
+```{r eval = params$gocirclegouObj, results='asis'}
+cat("## Circle plot GO BP up")
+```
+
+```{r eval=params$gocirclegouObj}
+    bprowsup <- params$bprowsup
+    if(is.null(bprowsup)){ 
+             bprowsup <-  ( if( dim(params$godtup)[1]<6) seq_len(nrow(params$godtup)) else seq_len(6) ) }
+    if(length(bprowsup)>=4){
+      circ <- data2circleReport(go=params$goup[bprowsup, ], res=params$datadfilt, genes=params$datagenesup)
+      circleReport(circ, label.size = 3, nsub = length(bprowsup), table.legend = FALSE)
+    }
+```
+
+
+<!-- go MF UP section --> 
+
+
+```{r eval = params$tablegouObj, results='asis' }
+cat("## GO MF up genes table")
+```
+
+```{r eval = params$tablegouObj}
+    goDT <- params$godtup
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-MF up-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "MFup",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "MFup",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="MF",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                           pageLength = 10, white_space = "normal",
+                           buttons = customButtons))
+```
+
+```{r eval = params$cloudgouObj, results='asis'}
+cat("## WordCloud GO MF up genes")
+```
+
+```{r eval=params$cloudgouObj, fig.width=10, fig.height=7}
+goup <- params$goup[params$goup$Ont=="MF", ]
+myggwordcloudReport(goup)
+```
+
+
+```{r eval = params$bargouObj, results='asis'}
+cat("## Barplot MF Up genes")
+```
+
+```{r eval = params$bargouObj }
+    mfrowsup <- params$mfrowsup
+    gosMF <- params$goup[params$goup$Ont=="MF",]
+    if(is.null(mfrowsup)){ 
+             mfrowsup <-  ( if( dim(params$godtup)[1]<10) seq_len(nrow(params$godtup)) else seq_len(10) ) }
+    gosMF <- params$goup[params$goup$Ont=="MF",]
+    plotGOReport(enrichdf = gosMF[mfrowsup, ], nrows = length(mfrowsup), ont="MF",
+           colors = c(params$upcolor) )
+```
+
+```{r eval = params$dotgouObj, results='asis'}
+cat("## Dotplot GO MF up")
+```
+
+```{r eval = params$dotgouObj}
+    mfrowsup <- params$mfrowsup
+        if(is.null(mfrowsup)){ 
+             mfrowsup <-  ( if( dim(params$godtup)[1]<20) seq_len(nrow(params$godtup)) else seq_len(20) ) }
+    gosMF <- params$goup[params$goup$Ont=="MF",]
+    dotPlotGOReport(gosMF[mfrowsup,], n = length(mfrowsup))
+```
+
+
+```{r eval = params$gobargouObj, results='asis'}
+cat("## GObarplot GO MF up")
+```
+
+```{r eval = params$gobargouObj}
+mfrowsup <- params$mfrowsup
+    if(is.null(mfrowsup)){ 
+             mfrowsup <-  ( if( dim(params$godtup)[1]<30) seq_len(nrow(params$godtup)) else seq_len(30) ) }
+    goBarplotReport(enrichGO = params$goup, resGO = params$datadfilt, genes= params$datagenesup,
+              category = "MF", nrows = mfrowsup)
+```
+
+```{r eval = params$gocirclegouObj, results='asis'}
+cat("## Circle plot GO MF up")
+```
+
+```{r eval=params$gocirclegouObj}
+    mfrowsup <- params$mfrowsup
+    if(is.null(mfrowsup)){ 
+             mfrowsup <-  ( if( dim(params$godtup)[1]<6) seq_len(nrow(params$godtup)) else seq_len(6) ) }
+    if(length(mfrowsup)>=4){
+      circ <- data2circleReport(go=params$goup[mfrowsup, ], res=params$datadfilt, genes=params$datagenesup)
+      circleReport(circ, label.size = 3, nsub = length(mfrowsup), table.legend = FALSE)
+    }
+```
+
+
+<!-- go CC UP section --> 
+
+```{r eval = params$tablegouObj, results='asis' }
+cat("## GO CC up genes table")
+```
+
+```{r eval = params$tablegouObj}
+    goDT <- params$godtup
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-CC up-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdeup,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "CCup",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "CCup",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="CC",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                           pageLength = 10, white_space = "normal",
+                           buttons = customButtons))
+```
+
+```{r eval = params$cloudgouObj, results='asis'}
+cat("## WordCloud GO CC up genes")
+```
+
+```{r eval=params$cloudgouObj, fig.width=10, fig.height=7}
+goup <- params$goup[params$goup$Ont=="CC", ]
+myggwordcloudReport(goup)
+```
+
+
+```{r eval = params$bargouObj, results='asis'}
+cat("## Barplot CC Up genes")
+```
+
+```{r eval = params$bargouObj }
+    ccrowsup <- params$ccrowsup
+    gosCC <- params$goup[params$goup$Ont=="CC",]
+    if(is.null(ccrowsup)){ 
+             ccrowsup <-  ( if( dim(params$godtup)[1]<10) seq_len(nrow(params$godtup)) else seq_len(10) ) }
+    gosCC <- params$goup[params$goup$Ont=="CC",]
+    plotGOReport(enrichdf = gosCC[ccrowsup, ], nrows = length(ccrowsup), ont="CC",
+           colors = c(params$upcolor) )
+```
+
+```{r eval = params$dotgouObj, results='asis'}
+cat("## Dotplot GO CC up")
+```
+
+
+```{r eval = params$dotgouObj}
+    ccrowsup <- params$ccrowsup
+        if(is.null(ccrowsup)){ 
+             ccrowsup <-  ( if( dim(params$godtup)[1]<20) seq_len(nrow(params$godtup)) else seq_len(20) ) }
+    gosCC <- params$goup[params$goup$Ont=="CC",]
+    dotPlotGOReport(gosCC[ccrowsup,], n = length(ccrowsup))
+```
+
+```{r eval = params$gobargouObj, results='asis'}
+cat("## GObarplot GO CC up")
+```
+
+```{r eval = params$gobargouObj}
+ccrowsup <- params$ccrowsup
+    if(is.null(ccrowsup)){ 
+             ccrowsup <-  ( if( dim(params$godtup)[1]<30) seq_len(nrow(params$godtup)) else seq_len(30) ) }
+    goBarplotReport(enrichGO = params$goup, resGO = params$datadfilt, genes= params$datagenesup,
+              category = "CC", nrows = ccrowsup)
+```
+
+```{r eval = params$gocirclegouObj, results='asis'}
+cat("## Circle plot GO CC up")
+```
+
+```{r eval=params$gocirclegouObj}
+    ccrowsup <- params$ccrowsup
+    if(is.null(ccrowsup)){ 
+             ccrowsup <-  ( if( dim(params$godtup)[1]<6) seq_len(nrow(params$godtup)) else seq_len(6) ) }
+    if(length(ccrowsup)>=4){
+      circ <- data2circleReport(go=params$goup[ccrowsup, ], res=params$datadfilt, genes=params$datagenesup)
+      circleReport(circ, label.size = 3, nsub = length(ccrowsup), table.legend = FALSE)
+    }
+```
+
+
+<!-- go Down section -->
+<!-- go BP Down section -->
+
+```{r eval = GODown, results='asis'}
+cat("# GO down genes section")
+```
+
+```{r eval = params$tablegodObj, results='asis' }
+cat("## GO BP down genes table")
+```
+
+```{r eval = params$tablegodObj}
+    goDT <- params$godtdown
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-BP down-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdedown,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "BPdown",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "BPdown",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="BP",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                           pageLength = 10, white_space = "normal",
+                           buttons = customButtons))
+```
+
+```{r eval = params$cloudgodObj, results='asis'}
+cat("## WordCloud GO BP down genes")
+```
+
+```{r eval=params$cloudgodObj, fig.width=10, fig.height=7}
+godown <- params$godown[params$godown$Ont=="BP", ]
+myggwordcloudReport(godown)
+```
+
+
+```{r eval = params$bargodObj, results='asis'}
+cat("## Barplot BP Down genes")
+```
+
+```{r eval = params$bargodObj }
+    bprowsdown <- params$bprowsdown
+    gosBP <- params$godown[params$godown$Ont=="BP",]
+    if(is.null(bprowsdown)){ 
+             bprowsdown <-  ( if( dim(params$godtdown)[1]<10) seq_len(nrow(params$godtdown)) else seq_len(10) ) }
+    gosBP <- params$godown[params$godown$Ont=="BP",]
+    plotGOReport(enrichdf = gosBP[bprowsdown, ], nrows = length(bprowsdown), ont="BP",
+           colors = c(params$downcolor) )
+```
+
+```{r eval = params$dotgodObj, results='asis'}
+cat("## Dotplot GO BP down")
+```
+
+
+```{r eval = params$dotgodObj}
+    bprowsdown <- params$bprowsdown
+       if(is.null(bprowsdown)){ 
+             bprowsdown <-  ( if( dim(params$godtdown)[1]<20) seq_len(nrow(params$godtdown)) else seq_len(20) ) }
+    gosBP <- params$godown[params$godown$Ont=="BP",]
+    dotPlotGOReport(gosBP[bprowsdown,], n = length(bprowsdown))
+```
+
+
+```{r eval = params$gobargodObj, results='asis'}
+cat("## GObarplot GO BP down")
+```
+
+```{r eval = params$gobargodObj}
+bprowsdown <- params$bprowsdown
+    if(is.null(bprowsdown)){ 
+             bprowsdown <-  ( if( dim(params$godtdown)[1]<30) seq_len(nrow(params$godtdown)) else seq_len(30) ) }
+    goBarplotReport(enrichGO = params$godown, resGO = params$datadfilt, genes= params$datagenesdown,
+              category = "BP", nrows = bprowsdown)
+```
+
+```{r eval = params$gocirclegodObj, results='asis'}
+cat("## Circle plot GO BP down")
+```
+
+```{r eval=params$gocirclegodObj}
+    bprowsdown <- params$bprowsdown
+    if(is.null(bprowsdown)){ 
+             bprowsdown <-  ( if( dim(params$godtdown)[1]<6) seq_len(nrow(params$godtdown)) else seq_len(6) ) }
+    if(length(bprowsdown)>=4){
+      circ <- data2circleReport(go=params$godown[bprowsdown, ], res=params$datadfilt, genes=params$datagenesdown)
+      circleReport(circ, label.size = 3, nsub = length(bprowsdown), table.legend = FALSE)
+    }
+```
+
+
+<!-- go MF Down section --> 
+
+
+```{r eval = params$tablegodObj, results='asis' }
+cat("## GO MF down genes table")
+```
+
+```{r eval = params$tablegodObj}
+    goDT <- params$godtdown
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-MF down-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdedown,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "MFdown",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "MFdown",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="MF",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                           pageLength = 10, white_space = "normal",
+                           buttons = customButtons))
+```
+
+
+```{r eval = params$cloudgodObj, results='asis'}
+cat("## WordCloud GO MF down genes")
+```
+
+```{r eval=params$cloudgodObj, fig.width=10, fig.height=7}
+godown <- params$godown[params$godown$Ont=="MF", ]
+myggwordcloudReport(godown)
+```
+
+```{r eval = params$bargodObj, results='asis'}
+cat("## Barplot MF Down genes")
+```
+
+```{r eval = params$bargodObj }
+    mfrowsdown <- params$mfrowsdown
+    gosMF <- params$godown[params$godown$Ont=="MF",]
+    if(is.null(mfrowsdown)){ 
+             mfrowsdown <-  ( if( dim(params$godtdown)[1]<10) seq_len(nrow(params$godtdown)) else seq_len(10) ) }
+    gosMF <- params$godown[params$godown$Ont=="MF",]
+    plotGOReport(enrichdf = gosMF[mfrowsdown, ], nrows = length(mfrowsdown), ont="MF",
+           colors = c(params$downcolor) )
+```
+
+```{r eval = params$dotgodObj, results='asis'}
+cat("## Dotplot GO MF down")
+```
+
+```{r eval = params$dotgodObj}
+    mfrowsdown <- params$mfrowsdown
+    if(is.null(mfrowsdown)){ 
+             mfrowsdown <-  ( if( dim(params$godtdown)[1]<20) seq_len(nrow(params$godtdown)) else seq_len(20) ) }
+    gosMF <- params$godown[params$godown$Ont=="MF",]
+    dotPlotGOReport(gosMF[mfrowsdown,], n = length(mfrowsdown))
+```
+
+
+```{r eval = params$gobargodObj, results='asis'}
+cat("## GObarplot GO MF down")
+```
+
+```{r eval = params$gobargodObj}
+mfrowsdown <- params$mfrowsdown
+    if(is.null(mfrowsdown)){ 
+             mfrowsdown <-  ( if( dim(params$godtdown)[1]<30) seq_len(nrow(params$godtdown)) else seq_len(30) ) }
+    goBarplotReport(enrichGO = params$godown, resGO = params$datadfilt, genes= params$datagenesdown,
+              category = "MF", nrows = mfrowsdown)
+```
+
+```{r eval = params$gocirclegodObj, results='asis'}
+cat("## Circle plot GO MF down")
+```
+
+```{r eval=params$gocirclegodObj}
+    mfrowsdown <- params$mfrowsdown
+    if(is.null(mfrowsdown)){ 
+             mfrowsdown <-  ( if( dim(params$godtdown)[1]<6) seq_len(nrow(params$godtdown)) else seq_len(6) ) }
+    if(length(mfrowsdown)>=4){
+      circ <- data2circleReport(go=params$godown[mfrowsdown, ], res=params$datadfilt, genes=params$datagenesdown)
+      circleReport(circ, label.size = 3, nsub = length(mfrowsdown), table.legend = FALSE)
+    }
+```
+
+
+<!-- go CC Down section --> 
+
+```{r eval = params$tablegodObj, results='asis' }
+cat("## GO CC down genes table")
+```
+
+```{r eval = params$tablegodObj}
+    goDT <- params$godtdown
+    names(goDT)[names(goDT) == "DE"] <- "DEG"
+    names(goDT)[names(goDT) == "P.DE"] <- "p-value"
+    names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level)
+    tituloTabla <- paste0("Table: GO-CC down-regulated genes | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$genesdedown,"/",params$genesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "CCdown",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "CCdown",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    datatable2Report(goDT[goDT$Ont=="CC",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(order = list(list(6, 'asc')),
+                           pageLength = 10, white_space = "normal",
+                           buttons = customButtons))
+```
+
+
+```{r eval = params$cloudgodObj, results='asis'}
+cat("## WordCloud GO CC down genes")
+```
+
+```{r eval=params$cloudgodObj, fig.width=10, fig.height=7}
+godown <- params$godown[params$godown$Ont=="CC", ]
+myggwordcloudReport(godown)
+```
+
+```{r eval = params$bargodObj, results='asis'}
+cat("## Barplot CC Down genes")
+```
+
+```{r eval = params$bargodObj }
+    ccrowsdown <- params$ccrowsdown
+    gosCC <- params$godown[params$godown$Ont=="CC",]
+    if(is.null(ccrowsdown)){ 
+             ccrowsdown <-  ( if( dim(params$godtdown)[1]<10) seq_len(nrow(params$godtdown)) else seq_len(10) ) }
+    gosCC <- params$godown[params$godown$Ont=="CC",]
+    plotGOReport(enrichdf = gosCC[ccrowsdown, ], nrows = length(ccrowsdown), ont="CC",
+           colors = c(params$downcolor) )
+```
+
+```{r eval = params$dotgodObj, results='asis'}
+cat("## Dotplot GO CC down")
+```
+
+```{r eval = params$dotgodObj}
+    ccrowsdown <- params$ccrowsdown
+    if(is.null(ccrowsdown)){ 
+             ccrowsdown <-  ( if( dim(params$godtdown)[1]<20) seq_len(nrow(params$godtdown)) else seq_len(20) ) }
+    gosCC <- params$godown[params$godown$Ont=="CC",]
+    dotPlotGOReport(gosCC[ccrowsdown,], n = length(ccrowsdown))
+```
+
+
+```{r eval = params$gobargodObj, results='asis'}
+cat("## GObarplot GO CC down")
+```
+
+```{r eval = params$gobargodObj}
+ccrowsdown <- params$ccrowsdown
+    if(is.null(ccrowsdown)){ 
+             ccrowsdown <-  ( if( dim(params$godtdown)[1]<30) seq_len(nrow(params$godtdown)) else seq_len(30) ) }
+    goBarplotReport(enrichGO = params$godown, resGO = params$datadfilt, genes= params$datagenesdown,
+              category = "CC", nrows = ccrowsdown)
+```
+
+```{r eval = params$gocirclegodObj, results='asis'}
+cat("## Circle plot GO CC down")
+```
+
+```{r eval=params$gocirclegodObj}
+    ccrowsdown <- params$ccrowsdown
+    if(is.null(ccrowsdown)){ 
+             ccrowsdown <-  ( if( dim(params$godtdown)[1]<6) seq_len(nrow(params$godtdown)) else seq_len(6) ) }
+    if(length(ccrowsdown)>=4){
+      circ <- data2circleReport(go=params$godown[ccrowsdown, ], res=params$datadfilt, genes=params$datagenesdown)
+      circleReport(circ, label.size = 3, nsub = length(ccrowsdown), table.legend = FALSE)
+    }
+```
+
+<!-- GSEA section -->
+
+```{r eval = GSEA, results='asis'}
+cat("# GSEA section")
+```
+
+```{r eval = GSEA, results='asis'}
+cat("## GSEA table results")
+```
+
+
+```{r eval = GSEA}
+mygsea <- params$gseagsea
+    if( length(which(mygsea@result$p.adjust<=0.05)) == 0 ){
+      break()
+    } else{
+    table <- mygsea@result[mygsea@result$p.adjust<=0.05 ,2:9] %>% 
+      mutate_at(vars(3:7), ~round(., 4))
+
+    tituloTabla <- paste0("Table: GSEA pathway | ","log2FC: ",params$logfc[1],"_",params$logfc[2]," | ","padj: ",params$padj," | ",
+                          "Num genes Up/down: ",params$numgenesdeup,"/",params$numgenesdedown)
+    customButtons <- list(
+        list(extend = "copy", title=tituloTabla),
+        list(extend = "excel",
+            filename = "GSEAkegg",
+            title = tituloTabla),
+        list(extend = "pdf",
+            filename = "GSEAkegg",
+            title = tituloTabla),
+        list(extend = "print", title=tituloTabla)
+    )
+    DT::datatable( table,
+                   rownames=FALSE,
+                   filter = list(position="top", clear=FALSE),
+                   options = list(order = list(list(4, 'asc')),
+                     lengthMenu = list(c(10,25,50,100,-1), c(10,25,50,100,"All")),
+                     columnDefs = list(list(orderable = FALSE,
+                                            className = "details-control",
+                                            targets = 1)
+                     ),
+                     dom = "Bfrtipl",
+                     buttons = customButtons,
+                     list(pageLength = 10, white_space = "normal")
+                   )
+    )
+    }
+```
+
+```{r eval=GSEA, results='asis'}
+cat("## GSEA plot")
+```
+
+```{r eval=GSEA}
+gseanr <- params$gsearow
+    if(is.null(gseanr)){gseanr <- c(1)}
+    mygsea <- params$gseagsea
+    if( length(which(mygsea@result$p.adjust<=0.05)) == 0 ){
+      break()
+    } else{
+        enrichplot::gseaplot2(params$gseagsea, geneSetID = gseanr, pvalue_table = TRUE, ES_geom = "line")
+        }
+```
+
+
