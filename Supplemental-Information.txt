@@ -1,0 +1,45 @@
+DEVEA: an interactive shiny application for Differential
+Expression, data Visualisation and Enrichment Analysis
+of transcriptomics data. - Supplemental Materials info
+author:
+        Riquelme-Perez M, Perez-Sanz F, Deleuze JF, Escartin C, Bonnet E, Brohard S.
+        Supplementary material
+
+Required R packages:
+
+The following R packages, together with their dependencies are required for running DEVEA either locally or as an 
+interactive R/Shiny application. All the packages are at the latest version which is compatible with the R version installed on the machine.
+
+- General functionalities
+htmltools, knitr, BiocParallel, shinyBS, shinyWidgets, shinyalert, shinybusy, shinydashboard, shinydashboardPlus, 
+shinyjs, shinymanager, shinythemes, DT, rgl, rglwidget, calibrate, stringr, tidytext, tidyverse.
+
+- Differential expression and enrichment analysis
+DESeq2, apeglm, limma, edgeR, clusterProfiler, fgsea, gage, gageData, pathview, topGO, EnsDb.Hsapiens.v86, 
+EnsDb.Mmusculus.v79, EnsDb.Rnorvegicus.v79, org.Hs.eg.db, org.Mm.eg.db, org.Rn.eg.db, AnnotationDbi, AnnotationHub.
+
+- General tools for visualization
+RColorBrewer, Rgraphviz, randomcoloR, ggplot2, ggpubr, igraph, ggraph, ggrepel, gplots, grid, 
+gridExtra, plotly, purrr, scales, heatmaply, pheatmap, PoiClaClu, EnhancedVolcano, mychordplot, wordcloud, visNetwork.
+
+
+Running DEVEA locally on a machine
+
+- From the terminal
+
+To run DEVEA locally on a Linux machine from the terminal: 
+
+git clone https://github.com/MiriamRiquelmeP/DEVEA.git .
+cd ./DEVEA
+R -e "shiny::runApp('~/entryapp')"
+
+
+- From Rstudio
+
+To run DEVEA from RStudio on a local computer:
+
+Download the compressed folder from the DEVEA github repository.
+Unzip the package.
+From Rstudio, access the DEVEA/entryapp folder and open App.R
+Click Run.
+
