@@ -52,12 +52,12 @@ ui <- dashboardPage(
                          generates an extensive pathway analysis from the selected set of significant 
                          features with interactive tables and plots. 
                          Finally, a thorough and customizable HTML report can be extracted for 
-                         further exploration outside the software. The application can be run from 
-                         the two links in the boxes below and the code is available on our 
-                         ", a("github repository.", href="https://github.com/MiriamRiquelmeP/Full-EnrichApp"),
-                         "Paper in preparation.", 
-                         #a("F1000Research.", href="https://f1000research.com/"),
-                         tags$br(),
+                         further exploration outside the software."),
+                       p("The application can be run from the two links in the boxes below."),
+                       p("For details, please see our ", a("paper", href="https://f1000research.com/articles/11-711"),
+                         "and a detailed ", a("demo.", href="https://shiny.imib.es/DESeqDevea/tutorial.html"),
+                       "Source code available at our ", a("GitHub repository.", href="https://github.com/MiriamRiquelmeP/DEVEA"),
+                       tags$br(),
                          p("Check all the possible outcomes extracted according to the type of input data 
                          and the overall DEVEA workflow in the graphs on the right."), 
                          p("Click", "here", style = "color:steelblue", "to discover more about us!"),
@@ -160,7 +160,7 @@ ui <- dashboardPage(
             width = 4,
             background = "limon",
             height = "250px",
-            tags$p("Enter a gene list (GL) with or without associated statistical values (GL + SV) 
+            tags$p("Enter a gene list (GL) without or with associated statistical values (GL + SV) 
             to run this analysis. Manage your threshold if GL + SV are provided to select your significant features
             or use your whole GL and get a full functional enrichment analysis 
             composed of tables and graphics based on Kyoto Encyclopedia of Genes and Genomes 
