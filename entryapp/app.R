@@ -228,8 +228,8 @@ ui <- dashboardPage(
 
 # Plug router into Shiny server.
 server <- function(input, output) {
-  shinyjs::onclick("enrich", runjs("window.open('https://shiny.imib.es/enrich_app/','_blank')") )
-  shinyjs::onclick("simple", runjs("window.open('https://shiny.imib.es/enrich_listable/','_blank')") )
+  shinyjs::onclick("enrich", runjs("window.open('https://shiny.imib.es/DESeqDEVEA/','_blank')") )
+  shinyjs::onclick("simple", runjs("window.open('https://shiny.imib.es/simpleDEVEA/','_blank')") )
   
   
   observeEvent(input$statButton, {
