@@ -58,7 +58,7 @@ header <- dashboardHeader(title = "Go Simple DEVEA",
                                   uiOutput("report"),
                                   style="margin-top:8px; margin-right: 10px"),
                           tags$li(class="dropdown", 
-                                  actionButton("moreinfo","Credits",
+                                  actionButton("moreinfo","Tutorial",
                                                style = "background-color: #8ec4d9"),
                                   style="margin-top:8px; margin-right: 5px"),
                           tags$li(class = "dropdown",
@@ -327,16 +327,17 @@ server <- function(input, output, session) {
       session$reload()
     })
     
-  observeEvent(input$moreinfo,{
-    showModal(
-      modalDialog(
-        size="l",
-        #tags$iframe(src="https://155.54.120.105/shiny/enrich_listable/pres1.html",  width="850px", height="700px")
-        tags$iframe(src="pres2.html",  width="850px", height="700px")
-      )
-    )
-  })
+  # observeEvent(input$moreinfo,{
+  #   showModal(
+  #     modalDialog(
+  #       size="l",
+  #       #tags$iframe(src="https://155.54.120.105/shiny/enrich_listable/pres1.html",  width="850px", height="700px")
+  #       tags$iframe(src="pres2.html",  width="850px", height="700px")
+  #     )
+  #   )
+  # })
   
+  shinyjs::onclick("moreinfo", runjs("window.open('tutorial.html','_blank')") )
   
   
   # variables reactivas ######
@@ -405,7 +406,15 @@ server <- function(input, output, session) {
     ## comprobaciones cargar fichero
     if(!is.null(input$geneFile$datapath)){
       if(input$geneFile$datapath != "" ){
-        validatedGene$list <- as.data.frame( readxl::read_xlsx(input$geneFile$datapath, sheet = 1))
+          if(input$geneFile$type == "text/plain"){
+                validatedGene$list <- as.data.frame(read.table(input$geneFile$datapath,
+                                                 header = F, sep = "\t"))
+          }else
+          if(input$geneFile$type == "text/csv"){
+              validatedGene$list <- as.data.frame( read.table(input$geneFile$datapath,
+                                                              header = F, sep = ";") )
+          } else{
+            validatedGene$list <- as.data.frame( readxl::read_xlsx(input$geneFile$datapath, sheet = 1)) } 
         if (annotation() == "ensg") {
           if(length(which(grepl("^ENS", validatedGene$list[,1], ignore.case = TRUE))) < nrow(validatedGene$list) ) {
             shinyalert("Oops!!", "One or more genes are not 
@@ -792,6 +801,7 @@ server <- function(input, output, session) {
       knobInput(
           inputId = "myKnobdown",
           label = "Lower logFC cutoff",
+          readOnly = TRUE,
           value = round(logfc()[1],2),
           min = min,
           max=max,
@@ -832,6 +842,7 @@ server <- function(input, output, session) {
           inputId = "myKnobup",
           label = "Upper LogFC cutoff",
           value = round(logfc()[2], 2),
+          readOnly = TRUE,
           min = min,
           max=max,
           rotation=rotation,
@@ -853,6 +864,7 @@ server <- function(input, output, session) {
       knobInput(
           inputId = "myKnobpval",
           label = "P.adj cutoff",
+          readOnly = TRUE,
           value = round(padj(), 2),
           min = 0,
           max = 0.2,
@@ -1608,7 +1620,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need( length(bprowsall())>=4 , "Select at least 4 rows"))
     bprowsall <- bprowsall()
     if(length(bprowsall)>=4){
-      circ <- data2circle(go=go$all[bprowsall, ], res=data$dfilt, genes=genes$all)
+      go <- go$all[go$all$Ont=="BP",]
+      circ <- data2circle(go=go[bprowsall, ], res=data$dfilt, genes=genes$all)
       p <- circle(circ, label.size = 3, nsub = length(bprowsall), table.legend = FALSE)
       svg$cirbpall <- p
       print(p)
@@ -1754,7 +1767,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need( length(mfrowsall())>=4 , "Select at least 4 rows"))
     mfrowsall <- mfrowsall()
     if(length(mfrowsall)>=4){
-      circ <- data2circle(go=go$all[mfrowsall, ], res=data$dfilt, genes=genes$all)
+        go <- go$all[go$all$Ont=="MF",]
+      circ <- data2circle(go=go[mfrowsall, ], res=data$dfilt, genes=genes$all)
       p <- circle(circ, label.size = 3, nsub = length(mfrowsall), table.legend = FALSE)
       svg$cirmfall <- p
       print(p)
@@ -1900,7 +1914,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need( length(ccrowsall())>=4 , "Select at least 4 rows"))
     ccrowsall <- ccrowsall()
     if(length(ccrowsall)>=4){
-      circ <- data2circle(go=go$all[ccrowsall, ], res=data$dfilt, genes=genes$all)
+        go <- go$all[go$all$Ont=="CC",]
+      circ <- data2circle(go=go[ccrowsall, ], res=data$dfilt, genes=genes$all)
       p <- circle(circ, label.size = 3, nsub = length(ccrowsall), table.legend = FALSE)
       svg$circcall <- p
       print(p)
@@ -2028,7 +2043,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need( length(bprowsup())>=4 , "Select at least 4 rows"))
     bprowsup <- bprowsup()
     if(length(bprowsup)>=4){
-      circ <- data2circle(go=go$up[bprowsup, ], res=data$dfilt, genes=genes$Up)
+        go <- go$up[go$up$Ont=="BP",]
+      circ <- data2circle(go=go[bprowsup, ], res=data$dfilt, genes=genes$Up)
       p <- circle(circ, label.size = 3, nsub = length(bprowsup), table.legend = FALSE)
       svg$cirbpup <- p
       print(p)
@@ -2161,7 +2177,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need(  length(mfrowsup())>=4  , "Select at least 4 rows"))
     mfrowsup <- mfrowsup()
     if(length(mfrowsup)>=4){
-      circ <- data2circle(go=go$up[mfrowsup, ], res=data$dfilt, genes=genes$Up)
+        go <- go$up[go$up$Ont=="MF",]
+      circ <- data2circle(go=go[mfrowsup, ], res=data$dfilt, genes=genes$Up)
       p <- circle(circ, label.size = 3, nsub = length(mfrowsup), table.legend = FALSE)
       svg$cirmfup <- p
       print(p)
@@ -2291,7 +2308,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need( length(ccrowsup())>=4 , "Select at least 4 rows"))
     ccrowsup <- ccrowsup()
     if(length(ccrowsup)>=4){
-      circ <- data2circle(go=go$up[ccrowsup, ], res=data$dfilt, genes=genes$Up)
+        go <- go$up[go$up$Ont=="CC",]
+      circ <- data2circle(go=go[ccrowsup, ], res=data$dfilt, genes=genes$Up)
       p <- circle(circ, label.size = 3, nsub = length(ccrowsup), table.legend = FALSE)
       svg$circcup <- p
       print(p)
@@ -2422,7 +2440,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need(  length(bprowsdown())>=4 , "Select at least 4 rows"))
     bprowsdown <- bprowsdown()
     if(length(bprowsdown)>=4){
-      circ <- data2circle(go=go$down[bprowsdown, ], res=data$dfilt, genes=genes$Down)
+        go <- go$down[go$down$Ont=="BP",]
+      circ <- data2circle(go=go[bprowsdown, ], res=data$dfilt, genes=genes$Down)
       p <- circle(circ, label.size = 3, nsub = length(bprowsdown), table.legend = FALSE)
       svg$cirbpdown <- p
       print(p)
@@ -2553,7 +2572,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need( length(mfrowsdown())>=4 , "Select at least 4 rows"))
     mfrowsdown <- mfrowsdown()
     if(length(mfrowsdown)>=4){
-      circ <- data2circle(go=go$down[mfrowsdown, ], res=data$dfilt, genes=genes$Down)
+        go <- go$down[go$down$Ont=="MF",]
+      circ <- data2circle(go=go[mfrowsdown, ], res=data$dfilt, genes=genes$Down)
       p <- circle(circ, label.size = 3, nsub = length(mfrowsdown), table.legend = FALSE)
       svg$cirmfdown <- p
       print(p)
@@ -2684,7 +2704,8 @@ output$barKeggAll <- downloadHandler(
     shiny::validate(need( length(ccrowsdown() )>=4 , "Select at least 4 rows"))
     ccrowsdown <- ccrowsdown()
     if(length(ccrowsdown)>=4){
-      circ <- data2circle(go=go$down[ccrowsdown, ], res=data$dfilt, genes=genes$Down)
+        go <- go$down[go$down$Ont=="CC",]
+      circ <- data2circle(go=go[ccrowsdown, ], res=data$dfilt, genes=genes$Down)
       p <- circle(circ, label.size = 3, nsub = length(ccrowsdown), table.legend = FALSE)
       svg$circcdown <- p
       print(p)
