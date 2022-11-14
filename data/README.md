@@ -13,6 +13,8 @@ This folder hosts the Demo data files of two different DEVEA compatible species.
 
 **5.GeneList_groupsKIJAK2vsGFP_Mus-musculus.xlsx** -> Gene List (**GL**) consisting on a single column of gene names.
 
+There is also a **universe.txt** file containing a list of genes to simulate a custom background for the enrichment analysis part.
+
 
 - For _Arabidopsis thaliana_:
 
@@ -25,6 +27,8 @@ This folder hosts the Demo data files of two different DEVEA compatible species.
 **4.GeneList-STATS_groupsMUvsWT_Arabidopsis-thaliana.xlsx** -> Gene List (**GL**) with associated statistical values (**SV**) per gene.
 
 **5.GeneList_groupsMUvsWT_Arabidopsis-thaliana.xlsx** -> Gene List (**GL**) consisting on a single column of gene names.
+
+
 
 
 For further information on the Demo data background, please visit the 'Use case' section of Riquelme-Perez M, Perez-Sanz F, Deleuze JF et al. DEVEA: an interactive shiny application for Differential Expression analysis, data Visualization and Enrichment Analysis of transcriptomics data [version 1; peer review: 1 approved, 1 approved with reservations]. F1000Research 2022, 11:711 (https://doi.org/10.12688/f1000research.122949.1)
