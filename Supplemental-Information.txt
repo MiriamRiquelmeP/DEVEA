@@ -31,7 +31,10 @@ To run DEVEA locally on a Linux machine from the terminal:
 
 git clone https://github.com/MiriamRiquelmeP/DEVEA.git .
 cd ./DEVEA
-R -e "shiny::runApp('~/entryapp')"
+- To access DESeqDEVEA:
+R -e "shiny::runApp('~/DESeqDEVEA')"
+- To access simpleDEVEA:
+R -e "shiny::runApp('~/simpleDEVEA')"
 
 
 - From Rstudio
