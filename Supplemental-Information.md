@@ -75,4 +75,5 @@ To run DEVEA from RStudio on a local computer:
         
         
         5. Click Run on RStudio.
+        
 
