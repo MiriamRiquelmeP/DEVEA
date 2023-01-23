@@ -1,5 +1,5 @@
 # DEVEA
-an interactive shiny application for Differential Expression analysis, data Visualization and Enrichment Analysis of transcriptomics data.
+an interactive shiny application for **D**ifferential **E**xpression analysis, data **V**isualization and **E**nrichment **A**nalysis of **transcriptomics data**.
 
 We are at a time of considerable growth in transcriptomics studies and subsequent in silico analysis. RNA sequencing (RNA-Seq) is the most widely used approach to analyse the transcriptome and is integrated in many studies. 
 
@@ -9,7 +9,11 @@ Here we present DEVEA, an R shiny application tool developed to perform differen
 
 The intuitive and easy-to-manipulate interface facilitates gene expression exploration through numerous interactive figures and tables, and statistical comparisons of expression profile levels between groups. Further meta-analysis such as enrichment analysis is also possible, without the need for prior bioinformatics expertise.
 
-DEVEA performs a comprehensive analysis from multiple and flexible data sources representing distinct analytical steps. Consequently, it produces dynamic graphs and tables, to explore the expression levels and statistical results from differential expression analysis. Moreover, it generates a comprehensive pathway analysis to extend biological insights. Finally, a complete and customizable HTML report can be extracted to enable the scientists to explore results beyond the application. DEVEA is freely accessible at https://shiny.imib.es/devea/ and the source code is available on our GitHub repository https://github.com/MiriamRiquelmeP/DEVEA.
+DEVEA performs a comprehensive analysis from multiple and flexible data sources representing distinct analytical steps. Consequently, it produces dynamic graphs and tables, to explore the expression levels and statistical results from differential expression analysis. Moreover, it generates a comprehensive pathway analysis to extend biological insights. Finally, a complete and customizable HTML report can be extracted to enable the scientists to explore results beyond the application. DEVEA is freely accessible at **https://shiny.imib.es/devea/**. 
+
+For some indications on how to download and launch the tool locally, please refer to the **Supplemental-Information.md** file. Notice that some 'Demo files' for several species to test the app are available in the **\data** folder on this repository. If you want to generate your own data, you may check **Galaxy_tutorials.md** containing key information on how to build your dataset from raw data.
+
+Finaly, a detailed walk-through with visual informacion regarding how to use DEVEA is available on **tutorial.html**.
 
 
 For more information, you can check: Riquelme-Perez M, Perez-Sanz F, Deleuze JF et al. DEVEA: an interactive shiny application for Differential Expression analysis, data Visualization and Enrichment Analysis of transcriptomics data [version 1; peer review: 1 approved, 1 approved with reservations]. F1000Research 2022, 11:711 (https://doi.org/10.12688/f1000research.122949.1)
