@@ -1,6 +1,6 @@
-DEVEA: an interactive shiny application for Differential
-Expression, data Visualisation and Enrichment Analysis
-of transcriptomics data. 
+DEVEA: an interactive shiny application for **D**ifferential
+**E**xpression, data **V**isualisation and **E**nrichment **A**nalysis
+of **transcriptomics data**. 
 
 - Supplemental Materials info author:
 
@@ -15,8 +15,8 @@ interactive R/Shiny application. All the packages are at the latest version whic
 
 - General functionalities
 
-htmltools, knitr, BiocParallel, shinyBS, shinyWidgets, shinyalert, shinybusy, shinydashboard, shinydashboardPlus, 
-shinyjs, shinymanager, shinythemes, DT, rgl, rglwidget, calibrate, stringr, tidytext, tidyverse.
+htmltools, knitr, BiocParallel, BiocManager, shinyBS, shinyWidgets, shinyalert, shinybusy, shinydashboard, shinydashboardPlus, 
+shinyjs, shinymanager, shinythemes, DT, rgl, rglwidget, calibrate, stringr, tidytext, tidyverse, dplyr, rvest, httpuv, MASS.
 
 - Differential expression and enrichment analysis
 
@@ -40,11 +40,10 @@ To run DEVEA locally on a Linux machine from the terminal:
         1. Download the source code from GitHub:
         
 > git clone https://github.com/MiriamRiquelmeP/DEVEA.git
-> 
+ 
 > cd ./DEVEA
 
         2. Open "script_libraryApp.R" on Rstudio to install all R libraries that DEVEA needs to work. 
-        Some dependences may need to be adjusted manually depending on the R version and computer.
         
         3. Back to the terminal:
 
@@ -66,7 +65,6 @@ To run DEVEA from RStudio on a local computer:
         2. Unzip the package.
         
         3. From Rstudio, open script_libraryApp.R inside DEVEA to install all R libraries that the tool needs to work. 
-        Some dependences may need to be adjusted manually depending on the R version and computer.
         
         4. DEpending on your input data:
                 
