@@ -1,10 +1,18 @@
-alibrary(dplyr)
+install.packages("dplyr")
+install.packages("rvest")
+library(dplyr)
 library(rvest)
+if(!require("BiocManager", quietly = TRUE))
+install.packages("BiocManager")
+install.packages("httpuv")
+install.packages("MASS")
+library (MASS)
+require(dplyr)
 
 InstalledPackages <- function(packages = NULL){
   CRANpackages <- available.packages() %>%
     as.data.frame() %>%
-    select(Package) %>%
+    dplyr::select(Package) %>%
     mutate(source = 'CRAN')
   
   url <- 'https://www.bioconductor.org/packages/release/bioc/'
@@ -12,7 +20,7 @@ InstalledPackages <- function(packages = NULL){
     read_html() %>%
     html_table() %>%
     .[[1]] %>%
-    select(Package) %>%
+    dplyr::select(Package) %>%
     mutate(source = 'BioConductor')
   
   all_packages <- bind_rows(CRANpackages, biocPackages)
@@ -24,16 +32,11 @@ InstalledPackages <- function(packages = NULL){
   }
   installed <- all_packages %>% filter( Package %in% packages$Package )
   NotIdentified <- packages[!(packages$Package %in% installed$Package), ] %>% filter(is.na(Priority))
-  CRAN <- installed %>% filter(source=="CRAN") %>% select(Package)
+  CRAN <- installed %>% filter(source=="CRAN") %>% dplyr::select(Package)
   Bioconductor <- installed %>% filter(source=="BioConductor") %>% select(Package)
   pkg <- list(cran = CRAN$Package, bioc = Bioconductor$Package, nid = NotIdentified$Package )
   return(pkg)
 }
-
-# /usr/local/lib/R/site-library
-# /home/kirk/R/x86_64-pc-linux-gnu-library/4.0
-#remotes::install_version("RSQLite", version = "2.2.5")
-#packages <- system("ls /home/miriam/R/x86_64-pc-linux-gnu-library/3.6", intern = TRUE)
 
 packages <- c("AnnotationDbi","chorddiag","DESeq2","DT","ensembldb","EnsDb.Mmusculus.v79","EnsDb.Hsapiens.v86","EnsDb.Rnorvegicus.v79","fgsea","ggpubr","ggrepel",
               "grid","gridExtra","heatmaply","limma","mychordplot","org.Hs.eg.db","org.Mm.eg.db","org.Rn.eg.db","org.At.tair.db","BSgenome.Athaliana.TAIR.TAIR9", "pheatmap","plotly","purrr",
@@ -50,8 +53,10 @@ pkg$nid
 for(i in pkg$cran){ if(!require(i, character.only = TRUE)){install.packages(i)} }
 for(i in pkg$bioc){ if(!require(i, character.only = TRUE)){BiocManager::install(i)} } 
 
+install.packages("devtools")
 devtools::install_github("mattflor/chorddiag")
 devtools::install_github("fpsanz/mychordplot")
+devtools::install_github("jokergoo/circlize")
 
 
 
