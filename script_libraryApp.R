@@ -33,7 +33,7 @@ InstalledPackages <- function(packages = NULL){
   installed <- all_packages %>% filter( Package %in% packages$Package )
   NotIdentified <- packages[!(packages$Package %in% installed$Package), ] %>% filter(is.na(Priority))
   CRAN <- installed %>% filter(source=="CRAN") %>% dplyr::select(Package)
-  Bioconductor <- installed %>% filter(source=="BioConductor") %>% select(Package)
+  Bioconductor <- installed %>% filter(source=="BioConductor") %>% dplyr::select(Package)
   pkg <- list(cran = CRAN$Package, bioc = Bioconductor$Package, nid = NotIdentified$Package )
   return(pkg)
 }
